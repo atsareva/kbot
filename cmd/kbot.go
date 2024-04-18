@@ -1,19 +1,23 @@
 /*
 Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"time"
 
 	"github.com/spf13/cobra"
+	telebot "gopkg.in/telebot.v3"
 )
 
 // kbotCmd represents the kbot command
 var kbotCmd = &cobra.Command{
-	Use:   "kbot",
-	Short: "A brief description of your command",
+	Use:     "kbot",
+	Aliases: []string{"start"},
+	Short:   "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -21,7 +25,34 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("kbot called")
+		fmt.Printf("kbot %s started\n", appVersion)
+
+		TeleSettings := telebot.Settings{
+			Token:  os.Getenv("TELE_TOKEN"),
+			Poller: &telebot.LongPoller{Timeout: 10 * time.Second},
+		}
+
+		kbot, err := telebot.NewBot(TeleSettings)
+
+		if err != nil {
+			log.Fatalf("Please check TELE_TOKEN vatiable. %s", err)
+			return
+		}
+
+		kbot.Handle(telebot.OnText, func(c telebot.Context) error {
+			log.Print(c.Message().Payload, c.Text())
+
+			payload := c.Message().Payload
+
+			switch payload {
+			case "hello":
+				err = c.Send(fmt.Sprintf("Hello I'm Kbot %s!", appVersion))
+			}
+
+			return err
+		})
+
+		kbot.Start()
 	},
 }
 
